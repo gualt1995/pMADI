@@ -2,7 +2,7 @@ import random
 
 
 class Player:
-    def __init__(self, level):
+    def __init__(self, level, HP):
         self.grid = level.grid
         self.name = "player"
         self.x_pos = level.nbCol - 1
@@ -11,7 +11,7 @@ class Player:
         self.has_tresure = False
         self.win = False
         self.has_sword = False
-        self.life = 3
+        self.life = HP
         self.max_col = level.nbCol
         self.max_line = level.nbLine
         self.prev_pos = [self.x_pos, self.y_pos]
@@ -94,22 +94,22 @@ class Player:
             while not moved:
                 tmp = random.randint(0, 3)
                 if tmp == 0:
-                    if self.x_pos + 1 != self.max_col and self.x_pos + 1 != self.prev_pos[0] and \
+                    if self.x_pos + 1 != self.max_col and \
                             self.grid[self.y_pos][self.x_pos + 1] != "_":
                         self.x_pos += 1
                         moved = True
                 elif tmp == 1:
-                    if self.x_pos - 1 != -1 and self.x_pos - 1 != self.prev_pos[0]and \
+                    if self.x_pos - 1 != -1 and \
                             self.grid[self.y_pos][self.x_pos - 1] != "_":
                         self.x_pos -= 1
                         moved = True
                 elif tmp == 2:
-                    if self.y_pos + 1 != self.max_line and self.y_pos + 1 != self.prev_pos[1]and \
+                    if self.y_pos + 1 != self.max_line and \
                             self.grid[self.y_pos + 1][self.x_pos] != "_":
                         self.y_pos += 1
                         moved = True
                 else:
-                    if self.y_pos - 1 != -1 and self.y_pos - 1 != self.prev_pos[1]and \
+                    if self.y_pos - 1 != -1 and \
                             self.grid[self.y_pos - 1][self.x_pos] != "_":
                         self.y_pos -= 1
                         moved = True

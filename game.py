@@ -1,4 +1,6 @@
 import random
+import player
+import os
 
 
 class Level:
@@ -138,3 +140,25 @@ class Level:
                                 Q.append(n)
                                 visited.append(n)
         return False
+
+    def visualize(self, policy):
+        p1 = player.Player(self, 1)
+        self.player_display(p1.y_pos, p1.x_pos, p1.life)
+        while True:
+            moved = False
+            input("Press Enter to see next step")
+            # print(key[0])
+            if policy[p1.y_pos][p1.x_pos] == 'u':
+                moved = p1.move_up()  # z
+            elif policy[p1.y_pos][p1.x_pos] == 'd':
+                moved = p1.move_down()  # s
+            elif policy[p1.y_pos][p1.x_pos] == 'l':
+                moved = p1.move_left()  # q
+            elif policy[p1.y_pos][p1.x_pos] == 'r':
+                moved = p1.move_right()  # d
+            if moved:
+                chain = p1.grid_reaction()
+                while chain:
+                    chain = p1.grid_reaction()
+                os.system('cls')
+                self.player_display(p1.y_pos, p1.x_pos, p1.life)
