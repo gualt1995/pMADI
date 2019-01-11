@@ -70,22 +70,21 @@ class Player:
                     self.life -= 1
             self.grid[self.y_pos][self.x_pos] = 'B'
         elif self.grid[self.y_pos][self.x_pos] == "C":  # falling into crack
-            self.life = 0
+            self.life -= 1
         elif self.grid[self.y_pos][self.x_pos] == "W":  # sword pickup
             self.has_sword = True
             self.grid[self.y_pos][self.x_pos] = 'B'
         elif self.grid[self.y_pos][self.x_pos] == "R":  # trap
             tmp = random.uniform(0, 1)
             if tmp < 0.1:
-                self.life = 0
+                self.life -= 1
             elif tmp < 0.4:
                 self.x_pos = self.max_col - 1
                 self.y_pos = self.max_line - 1
         elif self.grid[self.y_pos][self.x_pos] == "P":  # teleport
             self.x_pos = random.randint(0, self.max_col - 1)
             self.y_pos = random.randint(0, self.max_line - 1)
-            while self.grid[self.y_pos][self.x_pos] == "_" or  \
-                    self.x_pos == self.prev_pos[0] and self.y_pos == self.prev_pos[1]:
+            while self.grid[self.y_pos][self.x_pos] == "_":
                 self.x_pos = random.randint(0, self.max_col - 1)
                 self.y_pos = random.randint(0, self.max_line - 1)
             return True

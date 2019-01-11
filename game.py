@@ -4,8 +4,8 @@ import os
 
 
 class Level:
-    def __init__(self, filename):
-        self.name = filename
+    def __init__(self):
+        self.name = "N/A"
         self.nbLine = 0
         self.nbCol = 0
         self.grid = []
@@ -65,7 +65,8 @@ class Level:
         self.grid[0][0] = 'T'
         self.grid[self.nbLine - 1][self.nbCol - 1] = 'S'
 
-    def load(self):
+    def load(self, filename):
+        self.name = filename
         file = open(self.name, "r")
         for line in file:
             if "lines : " in line:
@@ -75,8 +76,8 @@ class Level:
             else:
                 self.grid.append(line.strip('\n').split(","))
 
-    def save(self):
-        file = open(self.name, "w")
+    def save(self, filename):
+        file = open(filename, "w")
         file.write("lines : " + str(self.nbLine) + '\n')
         file.write("columns : " + str(self.nbCol) + '\n')
         for line in self.grid:
@@ -141,13 +142,30 @@ class Level:
                                 visited.append(n)
         return False
 
-    def visualize(self, policy):
-        p1 = player.Player(self, 1)
+    def display_policy(self, p):
+        chars = {
+            'u': '^',
+            'd': 'v',
+            'l': '<',
+            'r': '>'
+        }
+        print("displaying policy")
+        for y in range(0, self.nbLine):
+            for x in range(0, self.nbCol):
+                if self.grid[y][x] != '_':
+                    print(chars[p[y][x]] + " ", end='')
+                else:
+                    print("_ ", end='')
+            print()
+        print()
+
+    def visualize(self, policies):
+        p1 = player.Player(self, 3)
         self.player_display(p1.y_pos, p1.x_pos, p1.life)
         while True:
+            policy = policies[(p1.has_key, p1.has_sword, p1.has_tresure, p1.life == 1)]
             moved = False
             input("Press Enter to see next step")
-            # print(key[0])
             if policy[p1.y_pos][p1.x_pos] == 'u':
                 moved = p1.move_up()  # z
             elif policy[p1.y_pos][p1.x_pos] == 'd':
@@ -162,3 +180,20 @@ class Level:
                     chain = p1.grid_reaction()
                 os.system('cls')
                 self.player_display(p1.y_pos, p1.x_pos, p1.life)
+                self.display_policy(policy)
+            if p1.life == 0 or p1.win:
+                if p1.life == 0:
+                    if self.grid[p1.y_pos][p1.x_pos] == 'C':
+                        print("you feel into a crack and died")
+                    elif self.grid[p1.y_pos][p1.x_pos] == 'E':
+                        print("an enemy killed you")
+                    elif self.grid[p1.y_pos][p1.x_pos] == 'R':
+                        print("you walked into a deadly trap")
+                    else:
+                        print("you died")
+                else:
+                    print("you won")
+                input("Press Enter to close")
+                return
+
+

@@ -16,8 +16,6 @@ p1 = player.Player(level_1)
 level_1.player_display(p1.y_pos, p1.x_pos, p1.life)
 #p1.move_down()
 
-#TODO alex tu devras sans doute changer les valeurs de key[0] ca peu changer selon les claviers il me semble
-
 while not p1.win and not p1.is_dead():
     moved = False
     key = player.getKey()
