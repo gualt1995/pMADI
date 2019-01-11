@@ -163,7 +163,7 @@ class Level:
         p1 = player.Player(self, 3)
         self.player_display(p1.y_pos, p1.x_pos, p1.life)
         while True:
-            policy = policies[(p1.has_key, p1.has_sword, p1.has_tresure, p1.life == 1)]
+            policy = policies[(p1.has_key, p1.has_sword, p1.has_treasure, p1.life == 1)]
             moved = False
             input("Press Enter to see next step")
             if policy[p1.y_pos][p1.x_pos] == 'u':

@@ -1,0 +1,13 @@
+
+*.pdf
+
+# Gurobi
+gurobi.log
+
+# IDEA 
+.idea/
+
+# Python
+__pycache__/
+
+
