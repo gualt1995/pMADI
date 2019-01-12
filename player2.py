@@ -2,7 +2,7 @@ import random
 import sys
 
 
-class Player:
+class Player2:
     def __init__(self, level, HP=3):
         self.grid = level.grid
         self.name = "player"

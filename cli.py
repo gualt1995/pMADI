@@ -161,12 +161,12 @@ class CliCurses(CliBaseClass):
 
     def display(self, string='', end="\n", style='normal', color='default'):
         self.stdscr.addstr("{}{}".format(string, end),
-                           CliCurses.STYLES[style]|
+                           CliCurses.STYLES[style] |
                            curses.color_pair(CliCurses.COLORS[color]))
         self.stdscr.refresh()
 
     def clear(self):
-        self.stdscr.clear()
+        self.stdscr.erase()
 
 
 class CliWindows(CliBaseClass):

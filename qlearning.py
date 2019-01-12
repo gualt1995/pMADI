@@ -5,7 +5,7 @@ from enum import Enum
 from numpy import std
 
 from game import Level
-from player import Player
+from player2 import Player2
 from cli import CliWindows, CliCurses
 
 
@@ -44,7 +44,7 @@ REWARDS = {
     }
 }
 
-DIRS = {
+DIRS_DISP = {
     DIRECTION.UP: '^',
     DIRECTION.DOWN: 'v',
     DIRECTION.RIGHT: '>',
@@ -52,13 +52,21 @@ DIRS = {
 }
 
 MOVES = {
-    DIRECTION.UP: Player.move_up,
-    DIRECTION.DOWN: Player.move_down,
-    DIRECTION.LEFT: Player.move_left,
-    DIRECTION.RIGHT: Player.move_right
+    DIRECTION.UP: Player2.move_up,
+    DIRECTION.DOWN: Player2.move_down,
+    DIRECTION.LEFT: Player2.move_left,
+    DIRECTION.RIGHT: Player2.move_right
 }
 
+# Maximum number of iterations.
 MAX_ITER = 100000
+# Minimum number of iterations.
+MIN_ITER = 10000
+# Number of iterations before epsilon is increased.
+TIME_BEFORE_EPS_BUMP = 1000
+# Number of iterations since last epsilon bump before the algorithm can exit.
+TIME_BEFORE_CAN_EXIT = 5000
+
 
 
 class QLearning:
@@ -88,7 +96,7 @@ class QLearning:
         self.level = level
         self.level_name = level.name
         self.grid = copy(level.grid)
-        self.player = Player(level)
+        self.player = Player2(level)
         self.cli = cli
 
         # Algorithm parameters
@@ -157,7 +165,7 @@ class QLearning:
 
         return x, y, has_key, has_sword, has_treasure
 
-    def absolute_policy(self, **player_attrs):
+    def policy(self, **player_attrs):
         """Returns the best direction to take for each possible state of the
         player.
 
@@ -186,7 +194,7 @@ class QLearning:
                              player_attrs.get('has_sword', False),
                              player_attrs.get('has_treasure', False))
                     best_q = self.get_max_next_q(origin_state=state, absolute=True)
-                    policy[y].append(DIRS[best_q[0]])
+                    policy[y].append(DIRS_DISP[best_q[0]])
 
         return policy
 
@@ -198,7 +206,7 @@ class QLearning:
                     possible_states.append((has_key, has_sword, has_treasure))
 
         for state in possible_states:
-            last_policy = self.absolute_policy(
+            last_policy = self.policy(
                 has_key=state[0],
                 has_sword=state[1],
                 has_treasure=state[2],
@@ -216,7 +224,7 @@ class QLearning:
                     possible_states.append((has_key, has_sword, has_treasure))
 
         for state in possible_states:
-            current_policy = self.absolute_policy(
+            current_policy = self.policy(
                 has_key=state[0],
                 has_sword=state[1],
                 has_treasure=state[2],
@@ -298,14 +306,15 @@ class QLearning:
 
     def reset(self):
         """Resets the player and level objects used by the algorithm."""
-        self.player = Player(self.level, HP=1)
+        self.player = Player2(self.level, HP=1)
         self.level.load(self.level_name)
 
     @property
     def epsilon(self):
-        """Returns the epsilon parameter used in the epsilon-strategy."""
-        # If stuck in an iteration, increase value of epsilon.
-        if self.epsilon_strategy == 'decrease' and self.time > 1000:
+        """Returns the epsilon parameter used in the epsilon-strategy.
+        If stuck in an iteration, increase value of epsilon."""
+        if self.epsilon_strategy == 'decrease' \
+                and self.time > TIME_BEFORE_EPS_BUMP:
             self._epsilon = 0.1
             self.iter_at_lift = self.iter
         return self._epsilon
@@ -364,8 +373,12 @@ class QLearning:
         total_wins = 0
         self.iter = 0
         self._epsilon = self._o_epsilon
+        interactive = False
         while True:
-            if self.iter - self.iter_at_lift > 5000 or self.iter > MAX_ITER:
+            if self.iter - self.iter_at_lift > TIME_BEFORE_CAN_EXIT \
+                    and self.iter > MIN_ITER:
+                break
+            if self.iter > MAX_ITER:
                 break
             if self.epsilon_strategy == 'decrease':
                 self._epsilon = max(0, self._epsilon - 0.001)
@@ -390,7 +403,7 @@ class QLearning:
                 ))
                 self.log("Variance: {}".format(std(wins)))
                 # self.display_q()
-                for line in self.absolute_policy():
+                for line in self.policy():
                     self.log(line)
             self.reset()
 
@@ -453,12 +466,16 @@ class QLearning:
                 # Update Q value
                 self.update_q(s_after_move, reward, max_q_value)
 
-                # if interactive:
-                #     self.display_q()
-                #     self.cli.display(self.get_state())
+                # if self.player.has_key:
+                #     interactive = True
+                if interactive:
+                    self.display_q()
+                    self.cli.display(self.get_state())
+                    self.cli.wait_for_input()
 
                 self.time += 1
 
+            interactive = False
             has_won = 1 if self.player.win else 0
             total_wins += has_won
             wins.append(has_won)
