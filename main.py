@@ -1,10 +1,10 @@
 from game import Level
-from player2 import Player
+from player2 import Player2
 from cli import get_cli
 from qlearning import QLearning, MOVES
 
 DISPLAY_CHAR = {
-    'player': ('p', 'Player'),
+    'player': ('♞', 'Player'),
     'life': ('♥', 'Player life'),
     '_': ('█', 'Wall'),
     'B': (' ', 'Empty cell'),
@@ -83,14 +83,15 @@ def load_level():
     GAME['level'] = Level()
     GAME['level'].generate_solvable(10, 10, 0.2, 0.4, 0.05, 1, 3, 3)
     GAME['level'].save('tmp')
-    GAME['player'] = Player(GAME['level'])
+    GAME['player'] = Player2(GAME['level'])
     display_all()
     cli.handle_action()
 
 
 def start_qlearning():
-    # ql = QLearning(GAME['level'], cli)
-    ql = QLearning(GAME['level'], cli, eps_strategy='decrease', epsilon=1)
+    ql = QLearning(GAME['level'], cli,
+                   eps_strategy='decrease',
+                   epsilon=1, player_health=1)
     stats = ql.train()
 
     cli.add_action("e", lambda: GAME.__setitem__('running_policy', False))
@@ -104,7 +105,10 @@ def start_qlearning():
     while GAME['running_policy']:
         ql.reset()
         GAME['player'] = ql.player
-        while not (ql.player.is_dead() or ql.player.win):
+
+        while not (ql.player.is_dead() or ql.player.win) \
+                and GAME['running_policy']:
+
             cli.handle_action()
             best_q = ql.get_max_next_q()
             next_direction = best_q[0]
@@ -114,8 +118,13 @@ def start_qlearning():
                     break
                 continue
             display_all()
-            ql.log("{:.3f} -> {}".format(best_q[1], best_q[0]))
-            ql.display_q()
+            player_attrs = {
+                'has_key': ql.player.has_key,
+                'has_sword': ql.player.has_sword,
+                'has_treasure': ql.player.has_treasure
+            }
+            for line in ql.policy(**player_attrs):
+                ql.log(line)
 
         # End of game
         if GAME['player'].is_dead():
@@ -123,7 +132,7 @@ def start_qlearning():
             cell = GAME['level'].grid[GAME['player'].y_pos][GAME['player'].x_pos]
             if cell == 'C':
                 cli.add_status('You fell into a crack and died.')
-            elif cell == 'E':
+            elif cell == 'B':
                 cli.add_status('An enemy killed you.')
             elif cell == 'R':
                 cli.add_status('You walked into a deadly trap.')
@@ -159,6 +168,8 @@ def user_loop():
         # Handle user input
         cli.handle_action()
         while GAME['player'].grid_reaction():
+            if GAME['player'].is_dead():
+                break
             continue
 
     # End of game
@@ -189,12 +200,12 @@ if __name__ == "__main__":
     cli = get_cli()
     cli.add_action('quit', quit_app, toolbar=True)
     cli.add_action('load level', load_level, toolbar=True)
-    cli.add_action('start playing', user_loop, toolbar=True)
+    cli.add_action('play', user_loop, toolbar=True)
     cli.add_action('optimize', start_qlearning, toolbar=True)
 
     GAME['level'] = Level()
     GAME['level'].load("Level_1")
-    GAME['player'] = Player(GAME['level'])
+    GAME['player'] = Player2(GAME['level'])
 
     display_all()
     cli.handle_action()

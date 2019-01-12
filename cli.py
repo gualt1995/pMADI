@@ -122,11 +122,6 @@ class CliCurses(CliBaseClass):
     """Command line interface implemented with curses. Not supported on
     Windows. See CliWindows."""
 
-    STYLES = {
-        'normal': curses.A_NORMAL,
-        'underline': curses.A_UNDERLINE,
-        'bold': curses.A_BOLD
-    }
     COLORS = {
         'default': 0, 'red': 1, 'yellow': 2
     }
@@ -149,6 +144,12 @@ class CliCurses(CliBaseClass):
         self.stdscr.idlok(True)
         self.stdscr.scrollok(True)
 
+        self.STYLES = {
+            'normal': curses.A_NORMAL,
+            'underline': curses.A_UNDERLINE,
+            'bold': curses.A_BOLD
+        }
+
     @staticmethod
     def close():
         curses.nocbreak()
@@ -161,24 +162,28 @@ class CliCurses(CliBaseClass):
 
     def display(self, string='', end="\n", style='normal', color='default'):
         self.stdscr.addstr("{}{}".format(string, end),
-                           CliCurses.STYLES[style]|
+                           CliCurses.STYLES[style] |
                            curses.color_pair(CliCurses.COLORS[color]))
         self.stdscr.refresh()
 
     def clear(self):
-        self.stdscr.clear()
+        self.stdscr.erase()
 
 
 class CliWindows(CliBaseClass):
-    KEYS = {
-        122: 'KEY_UP',
-        115: 'KEY_DOWN',
-        113: 'KEY_LEFT',
-        100: 'KEY_RIGHT',
+    SPECIAL_KEYS = {
+        'z': 'KEY_UP',
+        'w': 'KEY_UP',
+        's': 'KEY_DOWN',
+        'q': 'KEY_LEFT',
+        'a': 'KEY_LEFT',
+        'd': 'KEY_RIGHT',
     }
 
     def getkey(self, *args, **kwargs):
-        return CliWindows.KEYS[msvcrt.getwch()[0]]
+        key = msvcrt.getwch()
+        key = CliWindows.SPECIAL_KEYS.get(key, key)
+        return key
 
     def display(self, string='', *args, **kwargs):
         print(string, end=kwargs.get('end', '\n\r'))
@@ -189,7 +194,6 @@ class CliWindows(CliBaseClass):
 
 def get_cli():
     """Returns the correct Cli implementation for the current operating system."""
-    # return CliWindows()
     if sys.platform == 'darwin' or sys.platform[:3] == 'lin':
         return CliCurses()
     elif sys.platform[:3] == 'win':

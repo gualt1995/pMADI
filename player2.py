@@ -2,7 +2,7 @@ import random
 import sys
 
 
-class Player:
+class Player2:
     def __init__(self, level, HP=3):
         self.grid = level.grid
         self.name = "player"
@@ -50,9 +50,7 @@ class Player:
         return False
 
     def is_dead(self):
-        if self.life <= 0:
-            return True
-        return False
+        return self.life <= 0
 
     def grid_reaction(self):
         if self.grid[self.y_pos][self.x_pos] == "K":  # key pickup
@@ -119,22 +117,3 @@ class Player:
                         moved = True
             return True
         return False
-
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()
-
-
-def getKey():
-    import sys
-    in_key = _GetchWindows()
-    for i in range(sys.maxsize):
-        k = in_key()
-        if k != '':
-            break
-    return k
