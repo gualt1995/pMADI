@@ -68,12 +68,12 @@ TIME_BEFORE_EPS_BUMP = 1000
 TIME_BEFORE_CAN_EXIT = 5000
 
 
-
 class QLearning:
     """QLearning framework."""
 
     def __init__(self, level, cli=None, default_q=100,
-                 alpha=0.1, gamma=0.9, epsilon=0.01, eps_strategy='constant'):
+                 alpha=0.1, gamma=0.9, epsilon=0.01, eps_strategy='constant',
+                 player_health=1):
         """Initializes algorithm parameters.
 
         Args:
@@ -88,6 +88,8 @@ class QLearning:
                 epsilon will decrease with the number of train iteration. If
                 'constant', the value of epsilon will remain the same throughout
                 the learning process.
+            player_health (int): Number used to initialize player objects when
+                training.
         Raises:
             ValueError: If an argument has an unexpected value.
         """
@@ -96,7 +98,8 @@ class QLearning:
         self.level = level
         self.level_name = level.name
         self.grid = copy(level.grid)
-        self.player = Player2(level)
+        self.player = None
+        self.player_health = player_health
         self.cli = cli
 
         # Algorithm parameters
@@ -146,12 +149,14 @@ class QLearning:
             has_key = self.player.has_key
             has_sword = self.player.has_sword
             has_treasure = self.player.has_treasure
+            critical = self.player.life <= 1
         else:
             x = state[0]
             y = state[1]
             has_key = state[2]
             has_sword = state[3]
             has_treasure = state[4]
+            critical = state[5]
 
         if direction == DIRECTION.RIGHT:
             x += 1
@@ -163,7 +168,7 @@ class QLearning:
         if direction == DIRECTION.DOWN:
             y += 1
 
-        return x, y, has_key, has_sword, has_treasure
+        return x, y, has_key, has_sword, has_treasure, critical
 
     def policy(self, **player_attrs):
         """Returns the best direction to take for each possible state of the
@@ -192,61 +197,62 @@ class QLearning:
                     state = (x, y,
                              player_attrs.get('has_key', False),
                              player_attrs.get('has_sword', False),
-                             player_attrs.get('has_treasure', False))
-                    best_q = self.get_max_next_q(origin_state=state, absolute=True)
+                             player_attrs.get('has_treasure', False),
+                             player_attrs.get('critical', False))
+                    best_q = self.get_max_next_q(origin_state=state, no_random=True)
                     policy[y].append(DIRS_DISP[best_q[0]])
 
         return policy
 
-    def save_last_policy(self):
-        possible_states = []
-        for has_key in (True, False):
-            for has_sword in (True, False):
-                for has_treasure in (True, False):
-                    possible_states.append((has_key, has_sword, has_treasure))
+    # def save_last_policy(self):
+    #     possible_states = []
+    #     for has_key in (True, False):
+    #         for has_sword in (True, False):
+    #             for has_treasure in (True, False):
+    #                 possible_states.append((has_key, has_sword, has_treasure))
+    #
+    #     for state in possible_states:
+    #         last_policy = self.policy(
+    #             has_key=state[0],
+    #             has_sword=state[1],
+    #             has_treasure=state[2],
+    #         )
+    #         self.last_policy[state] = last_policy
 
-        for state in possible_states:
-            last_policy = self.policy(
-                has_key=state[0],
-                has_sword=state[1],
-                has_treasure=state[2],
-            )
-            self.last_policy[state] = last_policy
+    # def policy_distance(self):
+    #     """Computes the distance between the previous iteration's policy and the
+    #     current's policy."""
+    #     total_distance = 0
+    #     possible_states = []
+    #     for has_key in (True, False):
+    #         for has_sword in (True, False):
+    #             for has_treasure in (True, False):
+    #                 possible_states.append((has_key, has_sword, has_treasure))
+    #
+    #     for state in possible_states:
+    #         current_policy = self.policy(
+    #             has_key=state[0],
+    #             has_sword=state[1],
+    #             has_treasure=state[2],
+    #         )
+    #         for x in range(self.level.nbCol):
+    #             for y in range(self.level.nbLine):
+    #                 try:
+    #                     if self.last_policy[state][y][x] != current_policy[y][x]:
+    #                         total_distance += 1
+    #                 except KeyError:
+    #                     total_distance += 1
+    #
+    #     return total_distance
 
-    def policy_distance(self):
-        """Computes the distance between the previous iteration's policy and the
-        current's policy."""
-        total_distance = 0
-        possible_states = []
-        for has_key in (True, False):
-            for has_sword in (True, False):
-                for has_treasure in (True, False):
-                    possible_states.append((has_key, has_sword, has_treasure))
-
-        for state in possible_states:
-            current_policy = self.policy(
-                has_key=state[0],
-                has_sword=state[1],
-                has_treasure=state[2],
-            )
-            for x in range(self.level.nbCol):
-                for y in range(self.level.nbLine):
-                    try:
-                        if self.last_policy[state][y][x] != current_policy[y][x]:
-                            total_distance += 1
-                    except KeyError:
-                        total_distance += 1
-
-        return total_distance
-
-    def get_max_next_q(self, origin_state=None, absolute=False):
+    def get_max_next_q(self, origin_state=None, no_random=False):
         """Computes the best Q value neighbouring a specified state and the
         corresponding action.
 
         Args:
             origin_state (tuple): Player state to consider as origin. If None,
                 the current player state is used.
-            absolute (bool): If set to True, will always return the same action
+            no_random (bool): If set to True, will always return the same action
                 if several maximums are found.
 
         Returns:
@@ -283,7 +289,7 @@ class QLearning:
             elif q == max_value:
                 maximums.append((direction, q))
 
-        if absolute:
+        if no_random:
             return maximums[0]
 
         return choice(maximums)
@@ -298,7 +304,7 @@ class QLearning:
                     color = 'default'
                 self.cli.display("[{:.2f}]".format(self.Q.get(
                         (x, y, self.player.has_key, self.player.has_sword,
-                         self.player.has_treasure),
+                         self.player.has_treasure, self.player.life <= 1),
                         self.default_q)
                     ),
                     end="", color=color)
@@ -306,7 +312,7 @@ class QLearning:
 
     def reset(self):
         """Resets the player and level objects used by the algorithm."""
-        self.player = Player2(self.level, HP=1)
+        self.player = Player2(self.level, HP=self.player_health)
         self.level.load(self.level_name)
 
     @property
@@ -373,7 +379,7 @@ class QLearning:
         total_wins = 0
         self.iter = 0
         self._epsilon = self._o_epsilon
-        interactive = False
+        interactive = True
         while True:
             if self.iter - self.iter_at_lift > TIME_BEFORE_CAN_EXIT \
                     and self.iter > MIN_ITER:
@@ -390,19 +396,15 @@ class QLearning:
                 self.cli.clear()
                 self.log("ε = {:.3f}, α = {:.2f}, γ = {:.2f}"
                          .format(self.epsilon, self._alpha, self._gamma))
+                self.log("Training with {} health point.".format(self.player_health))
                 self.log("Iteration {} [victories = {} ({:.1%})]".format(
                     self.iter, total_wins, total_wins/self.iter))
                 self.log("Number of iterations since last ε increase: {}".format(
                     self.iter - self.iter_at_lift
                 ))
-                self.log("Distance to last policy: {}".format(
-                    self.policy_distance()
-                ))
-                self.log("Victory percentage over last 100 periods: {}%".format(
+                self.log("Victory percentage over last 100 episodes: {}%".format(
                     sum(wins)
                 ))
-                self.log("Variance: {}".format(std(wins)))
-                # self.display_q()
                 for line in self.policy():
                     self.log(line)
             self.reset()
@@ -475,7 +477,6 @@ class QLearning:
 
                 self.time += 1
 
-            interactive = False
             has_won = 1 if self.player.win else 0
             total_wins += has_won
             wins.append(has_won)

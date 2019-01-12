@@ -4,7 +4,7 @@ from cli import get_cli
 from qlearning import QLearning, MOVES
 
 DISPLAY_CHAR = {
-    'player': ('p', 'Player'),
+    'player': ('♞', 'Player'),
     'life': ('♥', 'Player life'),
     '_': ('█', 'Wall'),
     'B': (' ', 'Empty cell'),
@@ -89,8 +89,9 @@ def load_level():
 
 
 def start_qlearning():
-    # ql = QLearning(GAME['level'], cli)
-    ql = QLearning(GAME['level'], cli, eps_strategy='decrease', epsilon=1)
+    ql = QLearning(GAME['level'], cli,
+                   eps_strategy='decrease',
+                   epsilon=1, player_health=1)
     stats = ql.train()
 
     cli.add_action("e", lambda: GAME.__setitem__('running_policy', False))
@@ -131,7 +132,7 @@ def start_qlearning():
             cell = GAME['level'].grid[GAME['player'].y_pos][GAME['player'].x_pos]
             if cell == 'C':
                 cli.add_status('You fell into a crack and died.')
-            elif cell == 'E':
+            elif cell == 'B':
                 cli.add_status('An enemy killed you.')
             elif cell == 'R':
                 cli.add_status('You walked into a deadly trap.')
@@ -199,7 +200,7 @@ if __name__ == "__main__":
     cli = get_cli()
     cli.add_action('quit', quit_app, toolbar=True)
     cli.add_action('load level', load_level, toolbar=True)
-    cli.add_action('start playing', user_loop, toolbar=True)
+    cli.add_action('play', user_loop, toolbar=True)
     cli.add_action('optimize', start_qlearning, toolbar=True)
 
     GAME['level'] = Level()
