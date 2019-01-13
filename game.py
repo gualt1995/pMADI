@@ -160,7 +160,7 @@ class Level:
         print()
 
     def visualize(self, policies):
-        p1 = player.Player(self, 1)
+        p1 = player.Player(self, 10)
         self.player_display(p1.y_pos, p1.x_pos, p1.life)
         while True:
             policy = policies[(p1.has_key, p1.has_sword, p1.has_treasure, p1.life == 1)]

@@ -37,7 +37,7 @@ def get_reward(has_key=False, has_sword=False, has_treasure=False):
             'C': -1,  # crack
             'T': -1,  # treasure without key
             'W': 500,  # sword
-            'K': 1000,  # key
+            'K': 10000000000000000,  # key
             'P': -1,  # portal
             'M': -1  # moving platform
         },
@@ -46,10 +46,10 @@ def get_reward(has_key=False, has_sword=False, has_treasure=False):
         },
         'with_key': {
             'K': -1,
-            'T': 1000,
+            'T': 10000000000000000,
         },
         'with_treasure': {
-            'S': 1000,
+            'S': 10000000000000000,
             'T': -1
         }
     }
@@ -85,18 +85,19 @@ def set_variables(level, y, x, eq, gamma, has_sword):
     elif level.grid[y][x] == 'C':
         eq['dead'] = 1
     elif level.grid[y][x] == 'E':
+        eq[str(y) + str(x)] = 1 * gamma
         if has_sword:
             eq[str(y) + str(x)] = 1 * gamma
         else:
             eq[str(y) + str(x)] = 0.7 * gamma
-        eq['dead'] = 0.3 * gamma
+            eq['dead'] = 0.3 * gamma
         return
     else:
         eq[str(y) + str(x)] = 1 * gamma
 
 
 def define_equations(y, x, dt, level, eq, rest, gamma, r, has_sword):
-    if level.grid[y][x] not in ('P','M'):
+    if level.grid[y][x] not in ('P','M','_'):
         if dt[y][x] == 'u':
             if y > 0 and level.grid[y - 1][x] != '_':
                 rest.append(r[level.grid[y - 1][x]] * -1)
@@ -130,10 +131,7 @@ def define_equations(y, x, dt, level, eq, rest, gamma, r, has_sword):
             for y in range(0, level.nbLine):
                 for x in range(0, level.nbCol):
                     if level.grid[y][x] != '_':
-                        if level.grid[y][x] != 'C':
-                            p.append(str(y) + str(x))
-                        else:
-                            nb_dead += 1
+                        p.append(str(y) + str(x))
                         cpt += 1
             eq['dead'] = nb_dead / cpt * gamma
             for var in p:
@@ -144,23 +142,24 @@ def define_equations(y, x, dt, level, eq, rest, gamma, r, has_sword):
             cpt = 0
             p = []
             if y > 0:
-                if level.grid[y][x] != '_':
+                if level.grid[y-1][x] != '_':
                     cpt += 1
                     p.append(str(y - 1) + str(x))
             if y < level.nbLine - 1:
-                if level.grid[y][x] != '_':
+                if level.grid[y+1][x] != '_':
                     cpt += 1
                     p.append(str(y + 1) + str(x))
             if x > 0:
-                if level.grid[y][x] != '_':
+                if level.grid[y][x-1] != '_':
                     cpt += 1
                     p.append(str(y) + str(x - 1))
             if x < level.nbCol - 1:
-                if level.grid[y][x] != '_':
+                if level.grid[y][x+1] != '_':
                     cpt += 1
                     p.append(str(y) + str(x + 1))
             for num in p:
                 eq[num] = (1 / cpt) * gamma
+
 
 
 def build_dt1(level,ar,dt1):
@@ -180,7 +179,7 @@ def policy_iteration(gamma, level, r, crtical,has_sword=True):
     init_p_i(level, variables, p0)
     dt = copy.deepcopy(p0)
     cpt = 0
-    while cpt < 500:
+    while cpt < 2000:
         cpt += 1
         eqs = []
         rest = []
@@ -189,9 +188,18 @@ def policy_iteration(gamma, level, r, crtical,has_sword=True):
             for x in range(0, level.nbCol):
                 eq = dict.fromkeys(variables, 0)
                 eq['dead'] = 0  # adding variable for death
-                eq[str(y) + str(x)] = -1  # see policy iterations equations
-                define_equations(y, x, dt, level, eq, rest, gamma, r,has_sword)
-                eqs.append(list(eq.values()))
+                if level.grid[y][x] != '_':
+                    eq[str(y) + str(x)] = -1  # see policy iterations equations
+                    define_equations(y, x, dt, level, eq, rest, gamma, r,has_sword)
+                    eqs.append(list(eq.values()))
+                else:
+                    eq[str(y) + str(x)] = 1
+                    rest.append(0)
+                    eqs.append(list(eq.values()))
+
+
+        #for e in eqs:
+        #    print(e)
         # adding equation if U died
         eqdeath = dict.fromkeys(variables, 0)
         eqdeath[len(eqdeath) - 1] = 1
@@ -233,27 +241,24 @@ def policy_iteration(gamma, level, r, crtical,has_sword=True):
                 if dt[y][x] != update:
                     ctn = True
                 dt[y][x] = update
-        #print("-----------------------------------------------------")
-        #for line in dt:
-        #    print(line)
+        print("-----------------------------------------------------")
+        for line in dt:
+            print(line)
         if not ctn:
             return dt
     return dt
 
 
 def get_possible_move(y, x, dt1, level,has_sword):
-    damage = -10
+    damage = -2
     dead = -100
     if level.grid[y][x] == 'R':
-        p1 = 0.1 * damage + 0.3 * dt1[level.nbCol - 1][level.nbLine - 1] + 0.6 * dt1[y][x]
+        p1 = 0.4 * dt1[level.nbLine - 1][level.nbCol - 1] + 0.6 * dt1[y][x]
         return p1
     elif level.grid[y][x] == 'C':
         return dead
     elif level.grid[y][x] == 'E':
-        if has_sword:
-            return dt1[y][x]
-        else:
-            return 0.7 * dt1[y][x] + 0.3 * dead
+        return dt1[y][x]
     else:
         return dt1[y][x]
 

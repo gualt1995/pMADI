@@ -1,13 +1,22 @@
 import copy
+import time
+
+def timer(f):
+    def wrapper(*args):
+        t0=time.time()
+        res=f(*args)
+        t='%.2f' % (time.time()-t0)
+        print("Temps d'execution : ",t," secondes")
+        return res
+    return wrapper
 
 
 class Solver:
-    def __init__(self,level):
+    def __init__(self, level):
         self.level = level
-        self.damage = -10.0
+        self.damage = -2
         self.objective = 1000
         self.has_sword = False
-        #self.v = []
         self.dead = -500
 
         #  reward function
@@ -64,6 +73,7 @@ class Solver:
             v.append([[0, 0]]*self.level.nbCol)
         return v
 
+    @timer
     def solve_v_a(self, gamma, epsilon):
         return {
             (False, False, False, True): self.value_iteration(gamma, epsilon, self.get_reward(), True, False),
@@ -84,7 +94,9 @@ class Solver:
         self.has_sword = has_sword
         a = ['u', 'd', 'r', 'l']
         v = self.buit_states()
+        cpt = 0
         while True:
+            cpt += 1
             prev_v = copy.deepcopy(v)
             delta = 0
             for y in range(0, self.level.nbLine):
@@ -93,30 +105,34 @@ class Solver:
                     for action in a:
                         ra = -10000  # if cell is a wall
                         p1 = 0.0
+                        #if self.level.grid[y][x] not in ('P', 'M'):
                         if action == 'u':
                             if y > 0:
                                 if self.level.grid[y - 1][x] != '_':
                                     ra = r[self.level.grid[y - 1][x]]
-                                    p1 = self.get_possible_moves(y-1, x, prev_v, r, critcal)
+                                    p1 = self.get_possible_moves(y-1, x, prev_v, critcal)
                         elif action == 'd':
                             if y < self.level.nbLine - 1:
                                 if self.level.grid[y + 1][x] != '_':
                                     ra = r[self.level.grid[y+1][x]]
-                                    p1 = self.get_possible_moves(y + 1, x, prev_v, r,critcal)
+                                    p1 = self.get_possible_moves(y + 1, x, prev_v,critcal)
                         elif action == 'l':
                             if x > 0:
                                 if self.level.grid[y][x - 1] != '_':
                                     ra = r[self.level.grid[y][x-1]]
-                                    p1 = self.get_possible_moves(y, x - 1, prev_v, r,critcal)
+                                    p1 = self.get_possible_moves(y, x - 1, prev_v,critcal)
                         else:
                             if x < self.level.nbCol - 1:
                                 if self.level.grid[y][x + 1] != '_':
                                     ra = r[self.level.grid[y][x+1]]
-                                    p1 = self.get_possible_moves(y, x + 1, prev_v, r,critcal)
+                                    p1 = self.get_possible_moves(y, x + 1, prev_v,critcal)
                         q.append(ra + gamma * p1)
+                        #else:
+                        #   q = [-1000, -1000]
                     v[y][x] = q
                     delta = max(delta, abs(max(prev_v[y][x]) - max(v[y][x])))
             if delta < epsilon:
+                print(cpt)
                 return self.best_policy(v)
 
     def best_policy(self, v):
@@ -148,8 +164,8 @@ class Solver:
                     print("_ ", end='')
             print()
 
-    def get_possible_moves(self, y, x, prev_v, r,critcal):
-        if self.level.grid[y][x] == 'M':
+    def get_possible_moves(self, y, x, prev_v, critcal):
+        """if self.level.grid[y][x] == 'M':
             cpt = 0
             p = []
             rev = []
@@ -176,12 +192,12 @@ class Solver:
             p1 = 0
             for num in p:
                 p1 += num * 1/cpt
-            return p1
-        elif self.level.grid[y][x] == 'R':
+            return p1"""
+        if self.level.grid[y][x] == 'R':
             loose = self.damage
             if critcal:
                 loose = self.dead
-            p1 = 0.1 * loose + 0.3 * max(prev_v[self.level.nbCol - 1][self.level.nbLine - 1]) + \
+            p1 = 0.1 * loose + 0.3 * max(prev_v[self.level.nbLine - 1][self.level.nbCol - 1]) + \
                  0.6 * max(prev_v[y][x])
             return p1
         elif self.level.grid[y][x] == 'C':
@@ -194,7 +210,9 @@ class Solver:
                 return max(prev_v[y][x])
             else:
                 return 0.7 * max(prev_v[y][x]) + 0.3 * loose
-        elif self.level.grid[y][x] == 'P':
+        else:
+            return max(prev_v[y][x])
+        """elif self.level.grid[y][x] == 'P':
             p = []
             cpt = 0
             for y in range(0, self.level.nbLine):
@@ -209,7 +227,6 @@ class Solver:
             for num in p:
                 p1 += 1/cpt * num
             #print(p)
-            return p1
-        else:
-            return max(prev_v[y][x])
+            return p1"""
+
 
