@@ -1,0 +1,10 @@
+lines : 8
+columns : 8
+T,_,_,B,B,_,M,K
+E,E,_,P,E,B,R,_
+_,E,E,E,B,R,_,_
+E,E,E,R,B,_,B,P
+B,E,_,B,B,E,B,B
+B,_,R,R,B,_,E,_
+P,_,R,_,B,R,B,B
+_,_,W,_,R,B,E,S
