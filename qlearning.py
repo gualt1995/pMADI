@@ -2,7 +2,6 @@ import math
 from random import choice, uniform
 from copy import copy
 from enum import Enum
-from numpy import std
 
 from game import Level
 from player2 import Player2
@@ -17,19 +16,19 @@ class DIRECTION(Enum):
 
 
 REWARDS = {
-    'death': -500,
+    'death': -100,
     'default': {
         'S': -1,     # Starting position
         'E': -1,     # Enemy
         'B': -1,     # Blank
         'R': -1,     # Trap
         'C': -1,     # Crack
-        'W': 500,    # Sword
-        'K': 1000,   # Golden key
+        'W': 100,    # Sword
+        'K': 100,    # Golden key
         'P': -1,     # Magic portal
         'T': -1,     # Treasure
         'M': -1,     # Moving platform
-        '_': -1000,  # Wall
+        '_': -100,   # Wall
     },
     'with_sword': {
         'W': -1,
@@ -39,7 +38,7 @@ REWARDS = {
         'K': -1,
     },
     'with_treasure': {
-        'S': 1000,
+        'S': 1000000,
         'T': -1
     }
 }
@@ -59,19 +58,19 @@ MOVES = {
 }
 
 # Maximum number of iterations.
-MAX_ITER = 100000
+MAX_ITER = 80000
 # Minimum number of iterations.
-MIN_ITER = 10000
+MIN_ITER = 20000
 # Number of iterations before epsilon is increased.
-TIME_BEFORE_EPS_BUMP = 1000
+TIME_BEFORE_EPS_BUMP = 500
 # Number of iterations since last epsilon bump before the algorithm can exit.
-TIME_BEFORE_CAN_EXIT = 5000
+TIME_BEFORE_CAN_EXIT = 10000
 
 
 class QLearning:
     """QLearning framework."""
 
-    def __init__(self, level, cli=None, default_q=100,
+    def __init__(self, level, cli=None, default_q=10,
                  alpha=0.1, gamma=0.9, epsilon=0.01, eps_strategy='constant',
                  player_health=1):
         """Initializes algorithm parameters.
@@ -377,9 +376,11 @@ class QLearning:
         """
         wins = [1, 0]
         total_wins = 0
+        win_ratios = list([0])
         self.iter = 0
         self._epsilon = self._o_epsilon
-        interactive = True
+        interactive = False
+        # interactive = True
         while True:
             if self.iter - self.iter_at_lift > TIME_BEFORE_CAN_EXIT \
                     and self.iter > MIN_ITER:
@@ -402,11 +403,11 @@ class QLearning:
                 self.log("Number of iterations since last ε increase: {}".format(
                     self.iter - self.iter_at_lift
                 ))
-                self.log("Victory percentage over last 100 episodes: {}%".format(
-                    sum(wins)
+                ratio = sum(wins)/len(wins)
+                self.log("Victory percentage over last 1,000 episodes: {:.1%}".format(
+                    ratio
                 ))
-                for line in self.policy():
-                    self.log(line)
+                win_ratios.append(ratio)
             self.reset()
 
             self.time = 0
@@ -431,9 +432,9 @@ class QLearning:
                     # Trigger all events that could happen after the move. For
                     # example, if the player stepped on a moving platform or
                     # fell in a crack. If an object was on the cell, pick it up.
-                    reaction_happened = False
-                    while self.player.grid_reaction():
-                        reaction_happened = True
+                    reaction_happened, continue_reaction = self.player.grid_reaction()
+                    while continue_reaction:
+                        _, continue_reaction = self.player.grid_reaction()
                         if self.player.is_dead():
                             break
 
@@ -446,14 +447,20 @@ class QLearning:
 
                     # Estimate optimal future value.
                     max_q_value = self.get_max_next_q()[1]
-                    # if self.player.is_dead():
-                    #     max_q_value = 0
+
+                    if self.player.is_dead():
+                        max_q_value = 0
 
                     # If the player was moved by a chain reaction, we need to
                     # update the final landing cell as well.
                     if reaction_happened:
                         reward_after_reaction = self.get_reward(
                             s_after_reaction, ply_cell, self.player.is_dead())
+                        if interactive:
+                            self.cli.display("Player was modified")
+                            self.cli.display(s_after_reaction)
+                            self.cli.display(reward_after_reaction)
+                            self.cli.display(max_q_value)
                         self.update_q(s_after_reaction,
                                       reward_after_reaction, max_q_value)
                 else:
@@ -468,7 +475,7 @@ class QLearning:
                 # Update Q value
                 self.update_q(s_after_move, reward, max_q_value)
 
-                # if self.player.has_key:
+                # if sum(wins) == 0 and self.iter > 5000:
                 #     interactive = True
                 if interactive:
                     self.display_q()
@@ -480,9 +487,14 @@ class QLearning:
             has_won = 1 if self.player.win else 0
             total_wins += has_won
             wins.append(has_won)
-            if len(wins) > 100:
+            if len(wins) > 1000:
                 wins.pop(0)
 
+        with open('log', 'w') as f:
+            i = 0
+            for r in win_ratios:
+                f.write("{}, {}\n".format(i * 10, r))
+                i += 1
         return {
             'win_percentage': total_wins / self.iter,
             'wins': total_wins,

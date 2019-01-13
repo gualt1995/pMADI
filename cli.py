@@ -88,11 +88,31 @@ class CliBaseClass:
         if key in self.actions:
             action = self.actions[key]
             action['function'](
-                *action.get('args', []), **action.get('kwargs', {}))
+                *action.get('args', []), **action.get('kwargs', {})
+            )
 
-    def wait_for_input(self):
+    def wait_for_action(self, *args):
+        """Wait for a specific key to be pressed and performs the associated
+        action afterwards."""
+        if len(args) == 0:
+            raise ValueError("No actions specified.")
+
+        key = None
+        while key not in args:
+            key = self.getkey()
+        action = self.actions[key]
+        action['function'](
+            *action.get('args', []), **action.get('kwargs', {})
+        )
+
+    def wait_for_input(self, *args):
         """Blocks until a key is pressed by the user."""
-        self.getkey()
+        if len(args) > 0:
+            key = None
+            while key not in args:
+                key = self.getkey()
+        else:
+            self.getkey()
 
     def add_status(self, *args, **kwargs):
         """Adds a status string to the status board."""
@@ -162,7 +182,7 @@ class CliCurses(CliBaseClass):
 
     def display(self, string='', end="\n", style='normal', color='default'):
         self.stdscr.addstr("{}{}".format(string, end),
-                           CliCurses.STYLES[style] |
+                           self.STYLES[style] |
                            curses.color_pair(CliCurses.COLORS[color]))
         self.stdscr.refresh()
 

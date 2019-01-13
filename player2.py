@@ -52,6 +52,14 @@ class Player2:
     def is_dead(self):
         return self.life <= 0
 
+    def get_state(self):
+        return (
+            self.has_key,
+            self.has_sword,
+            self.has_treasure,
+            self.life <= 1
+        )
+
     def grid_reaction(self):
         if self.grid[self.y_pos][self.x_pos] == "K":  # key pickup
             self.has_key = True
@@ -67,10 +75,10 @@ class Player2:
             if not self.has_sword:
                 if random.uniform(0, 1) < 0.3:
                     self.life -= 1
-            self.grid[self.y_pos][self.x_pos] = 'B'
+            # self.grid[self.y_pos][self.x_pos] = 'B'
         elif self.grid[self.y_pos][self.x_pos] == "C":  # falling into crack
             self.life -= 1
-            return True
+            return True, False
         elif self.grid[self.y_pos][self.x_pos] == "W":  # sword pickup
             self.has_sword = True
             self.grid[self.y_pos][self.x_pos] = 'B'
@@ -78,11 +86,11 @@ class Player2:
             tmp = random.uniform(0, 1)
             if tmp <= 0.1:
                 self.life -= 1
-                return True
+                return True, False
             elif tmp <= 0.3:
                 self.x_pos = self.max_col - 1
                 self.y_pos = self.max_line - 1
-                return True
+                return True, True
         elif self.grid[self.y_pos][self.x_pos] == "P":  # teleport
             self.x_pos = random.randint(0, self.max_col - 1)
             self.y_pos = random.randint(0, self.max_line - 1)
@@ -90,7 +98,7 @@ class Player2:
                     self.x_pos == self.prev_pos[0] and self.y_pos == self.prev_pos[1]:
                 self.x_pos = random.randint(0, self.max_col - 1)
                 self.y_pos = random.randint(0, self.max_line - 1)
-            return True
+            return True, True
         elif self.grid[self.y_pos][self.x_pos] == "M":  # moving platform
             moved = False
             while not moved:
@@ -115,5 +123,6 @@ class Player2:
                             self.grid[self.y_pos - 1][self.x_pos] != "_":
                         self.y_pos -= 1
                         moved = True
-            return True
-        return False
+            return True, True
+
+        return False, False
