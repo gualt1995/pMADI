@@ -67,7 +67,6 @@ class Level:
 
     def load(self, filename):
         self.name = filename
-        self.grid.clear()
         file = open(self.name, "r")
         for line in file:
             if "lines : " in line:
@@ -78,7 +77,6 @@ class Level:
                 self.grid.append(line.strip('\n').split(","))
 
     def save(self, filename):
-        self.name = filename
         file = open(filename, "w")
         file.write("lines : " + str(self.nbLine) + '\n')
         file.write("columns : " + str(self.nbCol) + '\n')
@@ -162,7 +160,7 @@ class Level:
         print()
 
     def visualize(self, policies):
-        p1 = player.Player(self, 3)
+        p1 = player.Player(self, 1)
         self.player_display(p1.y_pos, p1.x_pos, p1.life)
         while True:
             policy = policies[(p1.has_key, p1.has_sword, p1.has_treasure, p1.life == 1)]
