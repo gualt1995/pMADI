@@ -5,6 +5,8 @@ from qlearning import QLearning, MOVES
 from solver import Solver
 from time import time
 
+import policy_iteration
+
 DISPLAY_CHAR = {
     'player': ('p', 'Player'),
     'life': ('♥', 'Player life'),
@@ -269,10 +271,10 @@ def start_value_iteration():
     GAME['user_loop'] = True
     while GAME['user_loop']:
         GAME['level'].load(GAME['level'].name)
-        player = Player2(GAME['level'], HP=1)
+        player = Player2(GAME['level'], HP=5)
         GAME['player'] = player
         cli.add_status("Press (space) to apply next move in policy.")
-        cli.add_status("Press (q) to quit.")
+        cli.add_status("Press (e) to quit.")
 
         while not (player.is_dead() or player.win) \
                 and GAME['user_loop']:
@@ -327,7 +329,71 @@ def start_value_iteration():
 
 
 def start_policy_iteration():
-    pass
+    cli.clear_status()
+    display_all()
+
+    cli.display("Starting Policy Iteration...")
+    policy = policy_iteration.solve_p_i(0.99, GAME['level'])
+    cli.add_status("Policy iteration done.")
+
+    GAME['user_loop'] = True
+    while GAME['user_loop']:
+        GAME['level'].load(GAME['level'].name)
+        player = Player2(GAME['level'], HP=5)
+        GAME['player'] = player
+        cli.add_status("Press (space) to apply next move in policy.")
+        cli.add_status("Press (e) to quit.")
+
+        while not (player.is_dead() or player.win) \
+                and GAME['user_loop']:
+
+            state = player.get_state()
+            x, y = player.x_pos, player.y_pos
+            next_direction = policy[state][y][x]
+            display_all()
+            for line in get_policy_disp(policy, state):
+                cli.display(line)
+            # cli.display("Next direction is {}".format(next_direction))
+            cli.handle_action()
+
+            if next_direction == 'u': player.move_up()
+            if next_direction == 'd': player.move_down()
+            if next_direction == 'l': player.move_left()
+            if next_direction == 'r': player.move_right()
+
+            _, continue_reaction = player.grid_reaction()
+            while continue_reaction:
+                _, continue_reaction = player.grid_reaction()
+                if player.is_dead():
+                    break
+
+        # End of game
+        cli.clear_status()
+        if GAME['player'].is_dead():
+            cli.add_status('GAME OVER')
+            cell = GAME['level'].grid[GAME['player'].y_pos][GAME['player'].x_pos]
+            if cell == 'C':
+                cli.add_status('You fell into a crack and died.')
+            elif cell == 'E':
+                cli.add_status('An enemy killed you.')
+            elif cell == 'R':
+                cli.add_status('You walked into a deadly trap.')
+            else:
+                cli.add_status('You died.')
+        if GAME['player'].win:
+            cli.add_status('GAME WON')
+
+        if not GAME['user_loop']:
+            break
+
+        display_all()
+        cli.display("Press any key to continue.")
+        cli.handle_action()
+        cli.clear_status()
+
+    display_all()
+    cli.display("Press (e) to quit.")
+    cli.wait_for_action('e')
 
 
 def optimize_menu():
@@ -337,7 +403,7 @@ def optimize_menu():
 
     cli.clear_status()
     cli.add_status("Press (1) to start Value Iteration algorithm.")
-    cli.add_status("Press (2) to start resolution with Linear Programming.")
+    cli.add_status("Press (2) to start Policy Iteration algorithm.")
     cli.add_status("Press (3) to start QLearning algorithm.")
 
     display_all()
@@ -353,7 +419,6 @@ if __name__ == "__main__":
 
     GAME['level'] = Level()
     GAME['level'].load("instances/lvl-n8-0")
-    # GAME['level'].load("tmp")
     GAME['player'] = Player2(GAME['level'])
 
     display_all()
