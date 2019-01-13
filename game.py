@@ -67,7 +67,6 @@ class Level:
 
     def load(self, filename):
         self.name = filename
-        self.grid.clear()
         file = open(self.name, "r")
         for line in file:
             if "lines : " in line:
@@ -79,7 +78,6 @@ class Level:
 
     def save(self, filename):
         file = open(filename, "w")
-        self.name = filename
         file.write("lines : " + str(self.nbLine) + '\n')
         file.write("columns : " + str(self.nbCol) + '\n')
         for line in self.grid:
