@@ -116,7 +116,7 @@ def start_qlearning():
         ql.reset()
         GAME['player'] = ql.player
         cli.add_status("Press any key to perform next step in learned policy.")
-        cli.add_status("Press (q) to quit.")
+        cli.add_status("Press (e) to quit.")
         display_all()
 
         while not (ql.player.is_dead() or ql.player.win) \
@@ -164,8 +164,8 @@ def start_qlearning():
         cli.clear_status()
 
     display_all()
-    cli.display("Press (q) to quit.")
-    cli.wait_for_action('q')
+    cli.display("Press (e) to quit.")
+    cli.wait_for_action('e')
 
 
 def user_play():
@@ -185,7 +185,7 @@ def user_play():
 
         GAME['player'] = Player2(GAME['level'])
         cli.add_status("You can play with ZQSD on Windows or the arrow keys on unix.")
-        cli.add_status("Press (q) to exit.")
+        cli.add_status("Press (e) to exit.")
 
         while not (GAME['player'].win or GAME['player'].is_dead()):
 
@@ -227,8 +227,8 @@ def user_play():
         cli.clear_status()
 
     display_all()
-    cli.display("Press (q) to quit.")
-    cli.wait_for_action('q')
+    cli.display("Press (e) to quit.")
+    cli.wait_for_action('e')
 
 
 def quit_app():
@@ -322,8 +322,8 @@ def start_value_iteration():
         cli.clear_status()
 
     display_all()
-    cli.display("Press (q) to quit.")
-    cli.wait_for_action('q')
+    cli.display("Press (e) to quit.")
+    cli.wait_for_action('e')
 
 
 def start_policy_iteration():
@@ -341,12 +341,12 @@ def optimize_menu():
     cli.add_status("Press (3) to start QLearning algorithm.")
 
     display_all()
-    cli.wait_for_action('1', '2', '3', 'q')
+    cli.wait_for_action('1', '2', '3', 'e')
 
 
 if __name__ == "__main__":
     cli = get_cli()
-    cli.add_action('quit', quit_app, toolbar=True)
+    cli.add_action('exit', quit_app, toolbar=True)
     cli.add_action('load level', load_level, toolbar=True)
     cli.add_action('play', user_play, toolbar=True)
     cli.add_action('optimize', optimize_menu, toolbar=True)
@@ -358,4 +358,4 @@ if __name__ == "__main__":
 
     display_all()
     cli.display_toolbar()
-    cli.wait_for_action('q', 'l', 'p', 'o')
+    cli.wait_for_action('e', 'l', 'p', 'o')
