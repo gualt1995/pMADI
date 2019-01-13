@@ -1,7 +1,17 @@
 import numpy as np
 import copy
+import time
 
+def timer(f):
+    def wrapper(*args):
+        t0=time.time()
+        res=f(*args)
+        t='%.2f' % (time.time()-t0)
+        print("Temps d'execution : ",t," secondes")
+        return res
+    return wrapper
 
+@timer
 def solve_p_i(gamma, level):
     return {
         (False, False, False, True): policy_iteration(gamma, level, get_reward(), True, False),
@@ -83,7 +93,7 @@ def set_variables(level, y, x, eq, gamma, has_sword):
         eq[str(level.nbCol - 1) + str(level.nbLine - 1)] = 0.3 * gamma
         eq[str(y) + str(x)] = 0.6 * gamma
     elif level.grid[y][x] == 'C':
-        eq['dead'] = 1
+        eq['dead'] = -1
     elif level.grid[y][x] == 'E':
         eq[str(y) + str(x)] = 1 * gamma
         if has_sword:
@@ -197,14 +207,13 @@ def policy_iteration(gamma, level, r, crtical,has_sword=True):
                     rest.append(0)
                     eqs.append(list(eq.values()))
 
-
-        #for e in eqs:
-        #    print(e)
         # adding equation if U died
         eqdeath = dict.fromkeys(variables, 0)
         eqdeath[len(eqdeath) - 1] = 1
         rest.append(500)
         eqs.append(list(eqdeath.values()))
+        #print(eqs)
+        #print(rest)
         ar = np.linalg.solve(eqs, rest)
         dt1 = []
         build_dt1(level, ar, dt1)
@@ -241,26 +250,18 @@ def policy_iteration(gamma, level, r, crtical,has_sword=True):
                 if dt[y][x] != update:
                     ctn = True
                 dt[y][x] = update
-        print("-----------------------------------------------------")
-        for line in dt:
-            print(line)
+        #print("-----------------------------------------------------")
+        #for line in dt:
+        #    print(line)
         if not ctn:
+            print(cpt)
             return dt
+    print(cpt)
     return dt
 
 
 def get_possible_move(y, x, dt1, level,has_sword):
-    damage = -2
-    dead = -100
-    if level.grid[y][x] == 'R':
-        p1 = 0.4 * dt1[level.nbLine - 1][level.nbCol - 1] + 0.6 * dt1[y][x]
-        return p1
-    elif level.grid[y][x] == 'C':
-        return dead
-    elif level.grid[y][x] == 'E':
-        return dt1[y][x]
-    else:
-        return dt1[y][x]
+    return dt1[y][x]
 
 
 

@@ -94,9 +94,7 @@ class Solver:
         self.has_sword = has_sword
         a = ['u', 'd', 'r', 'l']
         v = self.buit_states()
-        cpt = 0
         while True:
-            cpt += 1
             prev_v = copy.deepcopy(v)
             delta = 0
             for y in range(0, self.level.nbLine):
@@ -132,7 +130,6 @@ class Solver:
                     v[y][x] = q
                     delta = max(delta, abs(max(prev_v[y][x]) - max(v[y][x])))
             if delta < epsilon:
-                print(cpt)
                 return self.best_policy(v)
 
     def best_policy(self, v):
